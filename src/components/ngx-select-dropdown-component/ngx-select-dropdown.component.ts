@@ -365,7 +365,10 @@ export class SelectDropDownComponent implements OnInit, OnChanges, AfterViewInit
       }
 
       this.selectedItems.forEach((item: any) => {
-        const ind = this.availableItems.findIndex((aItem: any) => JSON.stringify(item) === JSON.stringify(aItem));
+        const ind = this.availableItems.findIndex((aItem: any) => 
+                                                  //JSON.stringify(item) === JSON.stringify(aItem)
+                                                  item === aItem || item.id === aItem.id
+                                                 );
         if (ind !== -1) {
           this.availableItems.splice(ind, 1);
         }
