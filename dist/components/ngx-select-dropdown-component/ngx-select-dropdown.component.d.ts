@@ -105,7 +105,8 @@ export declare class SelectDropDownComponent implements OnInit, OnChanges, After
     ngAfterViewInit(): void;
     registerOnChange(fn: any): void;
     registerOnTouched(fn: any): void;
-    writeValue(value: any): void;
+    writeValue(value: any, internal?: boolean): void;
+    reset(): void;
     /**
      * function sets whether to show items not found text or not
      */

@@ -6,6 +6,7 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
     }
     return t;
 };
+import { ArrayFilterPipe } from './../../pipes/filter-by.pipe';
 import { Component, Input, EventEmitter, Output, HostListener, ViewChildren, ElementRef, ChangeDetectorRef, forwardRef } from "@angular/core";
 import { NG_VALUE_ACCESSOR } from "@angular/forms";
 var SelectDropDownComponent = /** @class */ (function () {
@@ -132,18 +133,27 @@ var SelectDropDownComponent = /** @class */ (function () {
         // Arrow Down
         if ($event.keyCode === 40 && avaOpts.length > 0) {
             this.onArrowKeyDown();
+            /* istanbul ignore else */
+            if (this.focusedItemIndex >= avaOpts.length) {
+                this.focusedItemIndex = 0;
+            }
             avaOpts[this.focusedItemIndex].nativeElement.focus();
             $event.preventDefault();
         }
         // Arrow Up
         if ($event.keyCode === 38 && avaOpts.length) {
             this.onArrowKeyUp();
+            /* istanbul ignore else */
+            if (this.focusedItemIndex >= avaOpts.length) {
+                this.focusedItemIndex = avaOpts.length - 1;
+            }
             avaOpts[this.focusedItemIndex].nativeElement.focus();
             $event.preventDefault();
         }
         // Enter
         if ($event.keyCode === 13 && this.focusedItemIndex !== null) {
-            this.selectItem(this.availableItems[this.focusedItemIndex], this.focusedItemIndex);
+            var filteredItems = new ArrayFilterPipe().transform(this.availableItems, this.searchText, this.config.searchOnKey);
+            this.selectItem(filteredItems[this.focusedItemIndex], this.availableItems.indexOf(filteredItems[this.focusedItemIndex]));
             return false;
         }
     };
@@ -168,8 +178,7 @@ var SelectDropDownComponent = /** @class */ (function () {
     SelectDropDownComponent.prototype.registerOnTouched = function (fn) {
         this.onTouched = fn;
     };
-    SelectDropDownComponent.prototype.writeValue = function (value) {
-        /* istanbul ignore else */
+    SelectDropDownComponent.prototype.writeValue = function (value, internal) {
         if (value) {
             if (Array.isArray(value)) {
                 if (this.multiple) {
@@ -193,6 +202,21 @@ var SelectDropDownComponent = /** @class */ (function () {
                 this.initDropdownValuesAndOptions();
             }
         }
+        else {
+            this.value = [];
+            /* istanbul ignore else */
+            if (!internal) {
+                this.reset();
+            }
+        }
+        /* istanbul ignore else */
+        if (!internal) {
+            this.reset();
+        }
+    };
+    SelectDropDownComponent.prototype.reset = function () {
+        this.selectedItems = [];
+        this.initDropdownValuesAndOptions();
     };
     /**
      * function sets whether to show items not found text or not
@@ -228,14 +252,18 @@ var SelectDropDownComponent = /** @class */ (function () {
      * @param index:  index of the item
      */
     SelectDropDownComponent.prototype.deselectItem = function (item, index) {
-        this.selectedItems.splice(index, 1);
+        var _this = this;
+        this.selectedItems.forEach(function (element, i) {
+            if (item === element) {
+                _this.selectedItems.splice(i, 1);
+            }
+        });
         if (!this.availableItems.includes(item)) {
             this.availableItems.push(item);
             this.availableItems.sort(this.config.customComparator);
         }
         this.selectedItems = this.selectedItems.slice();
         this.availableItems = this.availableItems.slice();
-        // this.writeValue(this.selectedItems);
         this.valueChanged();
         this.resetArrowKeyActiveElement();
     };
@@ -245,6 +273,7 @@ var SelectDropDownComponent = /** @class */ (function () {
      * @param index:  index of the item
      */
     SelectDropDownComponent.prototype.selectItem = function (item, index) {
+        var _this = this;
         if (!this.multiple) {
             if (this.selectedItems.length > 0) {
                 this.availableItems.push(this.selectedItems[0]);
@@ -252,13 +281,17 @@ var SelectDropDownComponent = /** @class */ (function () {
             this.selectedItems = [];
             this.toggleDropdown = false;
         }
-        this.availableItems.splice(index, 1);
-        this.selectedItems.push(item);
+        this.availableItems.forEach(function (element, i) {
+            if (item === element) {
+                _this.selectedItems.push(item);
+                _this.availableItems.splice(i, 1);
+            }
+        });
         this.selectedItems = this.selectedItems.slice();
         this.availableItems = this.availableItems.slice();
         this.selectedItems.sort(this.config.customComparator);
         this.availableItems.sort(this.config.customComparator);
-        // this.writeValue(this.selectedItems);
+        // this.searchText = null;
         this.valueChanged();
         this.resetArrowKeyActiveElement();
     };
@@ -266,7 +299,7 @@ var SelectDropDownComponent = /** @class */ (function () {
      * When selected items changes trigger the chaange back to parent
      */
     SelectDropDownComponent.prototype.valueChanged = function () {
-        this.writeValue(this.selectedItems);
+        this.writeValue(this.selectedItems, true);
         // this.valueChange.emit(this.value);
         this.change.emit({ value: this.value });
         this.setSelectedDisplayText();
@@ -385,7 +418,7 @@ var SelectDropDownComponent = /** @class */ (function () {
     SelectDropDownComponent.decorators = [
         { type: Component, args: [{
                     selector: "ngx-select-dropdown",
-                    template: "\n    <div class=\"ngx-dropdown-container\" tabindex=\"0\">\n        <button type=\"button\" class=\"ngx-dropdown-button\" [ngClass]=\"{'disabled':disabled}\" [disabled]=\"disabled\" (click)=\"toggleSelectDropdown()\">\n            <span>{{selectedDisplayText}} </span>\n            <span class=\"nsdicon-angle-down\"></span>\n        </button>\n        <div class=\"ngx-dropdown-list-container\" *ngIf=\"toggleDropdown\" [style.maxHeight]=\"config.height\">\n            <div class=\"search-container\" *ngIf=\"config.search\">\n                <input name=\"search\" [(ngModel)]=\"searchText\" />\n                <label [ngClass]=\"{'active': searchText}\">\n                    <span class=\"nsdicon-search\"></span> {{config.searchPlaceholder}}</label>\n            </div>\n            <ul class=\"selected-items\">\n                <li tabindex=\"-1\" *ngFor=\"let selected of selectedItems;let i = index\" (click)=\"deselectItem(selected,i)\">\n                    <span class=\"nsdicon-close\"></span>\n                    <span> {{selected[config.displayKey] || selected}}</span>\n                </li>\n            </ul>\n            <hr *ngIf=\"selectedItems.length > 0 && availableItems.length > 0\" />\n            <ul class=\"available-items\">\n                <li #availableOption *ngFor=\"let item of availableItems| filterBy: searchText : config.searchOnKey | limitTo : config.limitTo;let i = index\"\n                    tabindex=\"-1\" [ngClass]=\"{'active': focusedItemIndex == i}\" (click)=\"selectItem(item,i)\">\n                    {{item[config.displayKey] || item}}</li>\n                <li *ngIf=\"showNotFound\">{{config.noResultsFound}}</li>\n            </ul>\n        </div>\n    </div>\n  ",
+                    template: "\n    <div class=\"ngx-dropdown-container\" tabindex=\"0\">\n        <button type=\"button\" class=\"ngx-dropdown-button\" [ngClass]=\"{'disabled':disabled}\" [disabled]=\"disabled\"\n            (click)=\"toggleSelectDropdown()\">\n            <span>{{selectedDisplayText}} </span>\n            <span class=\"nsdicon-angle-down\"></span>\n        </button>\n        <div class=\"ngx-dropdown-list-container\" *ngIf=\"toggleDropdown\" [style.maxHeight]=\"config.height\">\n            <div class=\"search-container\" *ngIf=\"config.search\">\n                <input name=\"search-text\" [(ngModel)]=\"searchText\" autocomplete=\"off\" />\n                <label [ngClass]=\"{'active': searchText}\">\n                    <span class=\"nsdicon-search\"></span> {{config.searchPlaceholder}}</label>\n            </div>\n            <ul class=\"selected-items\">\n                <li tabindex=\"-1\" *ngFor=\"let selected of selectedItems;let i = index\" (click)=\"deselectItem(selected,i)\">\n                    <span class=\"nsdicon-close\"></span>\n                    <span> {{selected[config.displayKey] || selected}}</span>\n                </li>\n            </ul>\n            <hr *ngIf=\"selectedItems.length > 0 && availableItems.length > 0\" />\n            <ul class=\"available-items\">\n                <li #availableOption\n                    *ngFor=\"let item of availableItems| filterBy: searchText : config.searchOnKey | limitTo : config.limitTo;let i = index\"\n                    tabindex=\"-1\" [ngClass]=\"{'active': focusedItemIndex == i}\" (click)=\"selectItem(item,i)\">\n                    {{item[config.displayKey] || item}}</li>\n                <li *ngIf=\"showNotFound\">{{config.noResultsFound}}</li>\n            </ul>\n        </div>\n    </div>\n  ",
                     styles: ["\n    .ngx-dropdown-container{width:100%;position:relative}.ngx-dropdown-container button{display:inline-block;margin-bottom:0;font-weight:400;line-height:1.42857143;vertical-align:middle;touch-action:manipulation;cursor:pointer;user-select:none;border:2px solid #cacaca;border-radius:2px;color:#333;background-color:#fff;white-space:nowrap;overflow-x:hidden;text-overflow:ellipsis}.ngx-dropdown-container button span{vertical-align:middle;float:left}.ngx-dropdown-container button .nsdicon-angle-down{position:relative;font-size:large;float:right}.ngx-dropdown-container .ngx-dropdown-button{width:100%;min-height:30px;padding:5px 10px 5px 10px;background-color:white}.ngx-dropdown-container .ngx-dropdown-list-container{box-sizing:border-box;border:1px solid rgba(0,0,0,0.15);border-radius:4px;padding-left:10px;padding-right:10px;z-index:999999999;width:100%;background-clip:padding-box;background:white;position:absolute;-webkit-box-shadow:5px 5px 5px 0px rgba(0,0,0,0.21);-moz-box-shadow:5px 5px 5px 0px rgba(0,0,0,0.21);box-shadow:5px 5px 5px 0px rgba(0,0,0,0.21);overflow-y:auto}.ngx-dropdown-container .ngx-dropdown-list-container .search-container{position:relative;padding-top:10px;margin-top:5px}.ngx-dropdown-container .ngx-dropdown-list-container .search-container input{background-color:transparent;border:none;border-bottom:1px solid #9e9e9e;border-radius:0;outline:none;height:2rem;width:100%;font-size:13px;margin:0;padding:0;box-shadow:none;box-sizing:content-box;transition:all 0.3s}.ngx-dropdown-container .ngx-dropdown-list-container .search-container input:focus{border-bottom:1px solid #26a69a}.ngx-dropdown-container .ngx-dropdown-list-container .search-container input:focus+label{transform:translateY(-2px) scale(0.8);transform-origin:0 0}.ngx-dropdown-container .ngx-dropdown-list-container .search-container label{color:#9e9e9e;position:absolute;top:0;left:0;height:100%;font-size:1rem;cursor:text;-webkit-transition:-webkit-transform 0.2s ease-out;transition:-webkit-transform 0.2s ease-out;transition:transform 0.2s ease-out;transition:transform 0.2s ease-out, -webkit-transform 0.2s ease-out;-webkit-transform-origin:0% 100%;transform-origin:0% 100%;text-align:initial;transform:translateY(12px);pointer-events:none}.ngx-dropdown-container .ngx-dropdown-list-container .search-container label.active{transform:translateY(-2px) scale(0.8);transform-origin:0 0}.ngx-dropdown-container .ngx-dropdown-list-container ul{margin-top:1rem;margin-bottom:1rem;list-style-type:none;padding-left:0px}.ngx-dropdown-container .ngx-dropdown-list-container ul.selected-items li{background-color:#337ab7;color:white;margin-bottom:2px}.ngx-dropdown-container .ngx-dropdown-list-container ul.available-items li.active{background-color:#337ab7;color:#ffff}.ngx-dropdown-container .ngx-dropdown-list-container ul li{font-size:inherit;cursor:pointer;display:block;padding:3px 20px;clear:both;font-weight:400;line-height:1.42857143;color:#333;white-space:normal}.ngx-dropdown-container .disabled{background-color:#e1e1e1;opacity:1;cursor:no-drop}\n  "],
                     providers: [
                         {

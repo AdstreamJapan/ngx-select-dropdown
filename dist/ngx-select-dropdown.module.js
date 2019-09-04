@@ -11,7 +11,7 @@ var SelectDropDownModule = /** @class */ (function () {
         { type: NgModule, args: [{
                     declarations: [SelectDropDownComponent, LimitToPipe, ArrayFilterPipe],
                     imports: [CommonModule, FormsModule],
-                    exports: [SelectDropDownComponent, LimitToPipe],
+                    exports: [SelectDropDownComponent, LimitToPipe, ArrayFilterPipe],
                     providers: [],
                     bootstrap: []
                 },] },
