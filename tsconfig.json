@@ -16,13 +16,7 @@
     "typeRoots" : [
       "./node_modules/@types"
     ],
-    "types": [
-      "jasmine",
-      "karma",
-      "node",
-      "webpack",
-      "webpack-env"
-    ]
+    "types": []
   },
   "include": [
     "src/**/*.ts"
