@@ -10,11 +10,13 @@ const normalizeToFullWidth = (text: any): string => {
    
    let str = text.toString().toLowerCase();
 
+   str = str.replace(/[’'｀]/g, '’');
+   
    // 1. まず半角カタカナを全角カタカナに変換 (NFKCを使用)
    str = str.normalize('NFKC');
 
    // 2. 残った半角英数・記号（! から ~ まで）を完全に全角に置換
-   str = str.replace(/[\!-\~]/g, (s: string) => {
+   str = str.replace(/[!-\~]/g, (s: string) => {
       return String.fromCharCode(s.charCodeAt(0) + 0xfee0);
    });
 

@@ -7,10 +7,11 @@ var normalizeToFullWidth = function (text) {
         return '';
     }
     var str = text.toString().toLowerCase();
+    str = str.replace(/[’'｀]/g, '’');
     // 1. まず半角カタカナを全角カタカナに変換 (NFKCを使用)
     str = str.normalize('NFKC');
     // 2. 残った半角英数・記号（! から ~ まで）を完全に全角に置換
-    str = str.replace(/[\!-\~]/g, function (s) {
+    str = str.replace(/[!-\~]/g, function (s) {
         return String.fromCharCode(s.charCodeAt(0) + 0xfee0);
     });
     return str;
