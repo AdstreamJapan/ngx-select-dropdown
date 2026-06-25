@@ -1,3 +1,4 @@
+declare var require: any;
 import { ArrayFilterPipe } from './../../pipes/filter-by.pipe';
 import {
   Component, OnInit, Input, EventEmitter, Output, HostListener,
